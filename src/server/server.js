@@ -1,7 +1,13 @@
 'use strict';
 
 const Hapi = require('@hapi/hapi');
+const Inert = require('@hapi/inert');
+const Vision = require('@hapi/vision');
+const HapiSwagger = require('hapi-swagger');
+const Joi = require('joi')
+const Pack = require('../../package');
 const { Octokit } = require("@octokit/core");
+const { join } = require('path');
 const octokit = new Octokit({ auth: process.env.TOKEN || '' });
 
 const server = Hapi.server({
@@ -15,6 +21,20 @@ const server = Hapi.server({
 server.route({
     method: 'GET',
     path: '/',
+    options: {
+        tags: ['api'],
+        notes: ['Get github repos'],
+        response: {
+            status: {
+                200: Joi.array().items()
+            }
+        },
+        validate: {
+            query: Joi.object({
+                since: Joi.number()
+            }),
+        }
+    },
     handler: async (req, res) => {
         const since = req.query.since || 0;
 
@@ -31,6 +51,26 @@ server.route({
 server.route({
     method: 'POST',
     path: '/',
+    options: {
+        tags: ['api'],
+        notes: ['Post add chrildren to their parent array'],
+        response: {
+            status: {
+                200: Joi.array().items(
+                    Joi.object({
+                        id: Joi.number(),
+                        title: Joi.any(),
+                        level: Joi.number(),
+                        children: Joi.any(),
+                        parent_id: Joi.number().allow(null)
+                    })
+                )
+            }
+        },
+        validate: {
+            payload: Joi.object()
+        }
+    },
     handler: function (req, res) {
         const payload = req.payload;
 
@@ -76,6 +116,22 @@ exports.init = async () => {
 };
 
 exports.start = async () => {
+    const swaggerOptions = {
+        info: {
+            title: 'Test API Documentation',
+            version: Pack.version,
+        },
+    };
+
+    await server.register([
+        Inert,
+        Vision,
+        {
+            plugin: HapiSwagger,
+            options: swaggerOptions
+        }
+    ]);
+
     await server.start();
     console.log(`Server running at: ${server.info.uri}`);
     return server;
