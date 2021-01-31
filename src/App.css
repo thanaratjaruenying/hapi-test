@@ -1,0 +1,10 @@
+.tableContainer {
+  font-size: larger;
+}
+.tableContainer > thead > tr > th {
+  width: 500px;
+}
+
+.tableContainer > tbody {
+  text-align: center;
+}
